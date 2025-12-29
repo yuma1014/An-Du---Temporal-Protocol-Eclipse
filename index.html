@@ -48,30 +48,26 @@
         html, body {
             width: 100%; height: 100%;
             overflow-x: hidden;
-            /* 鎖定背景色與 Manifest 一致 */
             background-color: #111111; 
         }
         
         body {
             color: var(--bone-white);
             background-image: radial-gradient(circle at center, #1a1a1a 0%, #111111 100%);
-            /* 防止 iOS 橡皮筋滾動效果，讓體驗更像 App */
             overscroll-behavior-y: none;
             display: flex; flex-direction: column;
         }
 
-        /* 背景圖：保留原色 */
         .bg-fixed { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; 
             opacity: 0.3; 
             background-image: var(--bg-img); background-size: cover; background-position: center;
         }
 
-        /* --- 佈局容器：處理安全區域 --- */
         .app-layout {
             flex: 1;
             width: 100vw;
-            overflow-y: auto; /* 內容在此滾動 */
+            overflow-y: auto;
             overflow-x: hidden;
             scroll-behavior: smooth;
             padding-bottom: 40px;
@@ -83,10 +79,8 @@
             padding: 20px; position: relative;
         }
 
-        /* --- 主容器：手機版優化 --- */
         #app-section { 
             z-index: 2; 
-            /* [關鍵] 避開瀏海與頂部狀態列 */
             padding-top: max(20px, env(safe-area-inset-top)); 
             padding-bottom: max(20px, env(safe-area-inset-bottom));
         }
@@ -104,7 +98,7 @@
             gap: 1.2rem;
             position: relative;
             animation: border-pulse 8s infinite ease-in-out;
-            margin: auto 0; /* 垂直置中 */
+            margin: auto 0;
         }
 
         @keyframes border-pulse {
@@ -114,7 +108,6 @@
 
         header { display: flex; flex-direction: column; align-items: center; margin-bottom: 0.5rem; text-align: center; }
         
-        /* Logo：保留原色 */
         .logo {
             width: 110px; height: 110px; margin-bottom: 20px; 
             border-radius: 24px;
@@ -238,25 +231,6 @@
             display: block;
         }
 
-        /* --- 手機版 RWD 精確修正 --- */
-        @media (max-width: 480px) {
-            .obsidian-container { 
-                padding: 1.5rem; 
-                width: 90%; /* 不要是滿版，留點呼吸感 */
-                margin: 0 auto;
-            }
-            .logo { width: 90px; height: 90px; margin-bottom: 15px; }
-            h1 { font-size: 1.6rem; }
-            
-            input[type="text"] { font-size: 16px; padding: 14px; }
-            
-            .btn-group { flex-direction: column; gap: 10px; }
-            button { padding: 14px; width: 100%; }
-            
-            .info-title { font-size: 1.8rem; }
-            .features-grid { grid-template-columns: 1fr; gap: 20px; }
-        }
-
         .scroll-indicator {
             position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
             color: var(--ash-gray); 
@@ -268,7 +242,7 @@
             50% {transform: translateX(-50%) translateY(-10px); opacity: 1;}
         }
 
-        /* Info Section */
+        /* --- Info Section Layout --- */
         #info-section { 
             z-index: 2; padding-top: 60px; padding-bottom: 80px; 
             background: linear-gradient(to top, #000 0%, transparent 100%);
@@ -302,6 +276,35 @@
         .main-footer { 
             text-align: center; margin-top: 60px; color: #444; font-size: 0.7rem; 
             letter-spacing: 0.2em; border-top: 1px solid #111; padding-top: 20px;
+        }
+
+        /* --- [關鍵修改] 手機版 RWD 強制垂直排列 --- */
+        /* 將斷點提高到 900px，確保所有手機/直式平板都變成單欄垂直堆疊 */
+        @media (max-width: 900px) {
+            .obsidian-container { 
+                padding: 1.5rem; 
+                width: 90%; 
+                margin: 0 auto;
+            }
+            .logo { width: 90px; height: 90px; margin-bottom: 15px; }
+            h1 { font-size: 1.6rem; }
+            
+            input[type="text"] { font-size: 16px; padding: 14px; }
+            
+            .btn-group { flex-direction: column; gap: 10px; }
+            button { padding: 14px; width: 100%; }
+            
+            .info-title { font-size: 1.8rem; }
+
+            /* [重點] 強制變成 1 欄 (垂直堆疊) */
+            .features-grid { 
+                grid-template-columns: 1fr; 
+                gap: 30px; 
+            }
+            /* [重點] 增加內距，確保看起來像飽滿的方塊，而不是扁扁的長方形 */
+            .feature-card {
+                padding: 50px 30px;
+            }
         }
 
         .observe-target { opacity: 0; transform: translateY(20px); }
@@ -375,14 +378,14 @@
                         <div class="card-text">影片轉化為無意義的亂碼密文。無伺服器，無雲端，僅存於您的本地與指尖。</div>
                     </div>
                     <div class="feature-card observe-target">
-                        <span class="icon-large">🔒</span>
-                        <div class="card-title">AES-256 GCM</div>
-                        <div class="card-text">軍規級加密標準。即使截獲密文，若無正確的時間與金鑰，亦無法窺探分毫。</div>
+                        <span class="icon-large">🛡️</span>
+                        <div class="card-title">霓喃自研加密算法</div>
+                        <div class="card-text">採用美國聯邦政府標準的AES-256加密算法，配合 GCM 完整性驗證。即使截獲密文，若無正確的時間與金鑰，亦無法窺探分毫。</div>
                     </div>
                     <div class="feature-card observe-target">
                         <span class="icon-large">⏳</span>
                         <div class="card-title">日蝕界線</div>
-                        <div class="card-text">每日早晨 08:00 (UTC+8) 重置規則。錯過今日，密文將永久封存於虛空之中。</div>
+                        <div class="card-text">金鑰與 NST國家標準時間(UTC+8) 綁定。錯過今日，密文將永久消散於虛空之中。</div>
                     </div>
                 </div>
 
@@ -427,7 +430,7 @@
     }
     updateTimeAndTheme(); setInterval(updateTimeAndTheme, 60000);
 
-    // 加密核心邏輯 (含網路超時保護)
+    // 加密核心邏輯
     const statusLog = document.getElementById('status-log');
     const progressBar = document.getElementById('progress-bar');
     const progressFill = document.getElementById('progress-fill');
