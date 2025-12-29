@@ -48,31 +48,27 @@
         html, body {
             width: 100%; height: 100%;
             overflow-x: hidden;
-            /* 確保最底層是黑色 */
             background-color: #111111; 
         }
         
         body {
             color: var(--bone-white);
-            /* [修正] 移除原本 body 的背景圖片與漸層，避免蓋住 z-index:-1 的圖片層 */
+            /* 保持透明以顯示底層圖片 */
             background: transparent; 
             overscroll-behavior-y: none;
             display: flex; flex-direction: column;
         }
 
-        /* [修正] 背景層：將圖片與漸層疊加在這裡 */
+        /* 背景層 */
         .bg-fixed { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; 
-            opacity: 0.4; /*稍微調高一點透明度讓圖片明顯些*/
-            
-            /* 這裡使用了多重背景：上層是半透明漸層，下層是您的背景圖 */
+            opacity: 0.4;
             background-image: 
                 radial-gradient(circle at center, rgba(26,26,26,0.5) 0%, #111111 100%), 
                 var(--bg-img);
-            
             background-size: cover; 
             background-position: center;
-            background-blend-mode: overlay; /* 讓漸層與圖片混合，產生幽冥感 */
+            background-blend-mode: overlay;
         }
 
         .app-layout {
@@ -176,6 +172,7 @@
             cursor: pointer; position: relative;
             text-align: center; padding: 10px;
         }
+        /* [修正] 將 accept 改為 */*, 強制 Android 顯示檔案管理員 */
         .file-drop-zone input[type="file"] {
             position: absolute; width: 100%; height: 100%; top: 0; left: 0; opacity: 0; cursor: pointer;
         }
@@ -253,7 +250,6 @@
             50% {transform: translateX(-50%) translateY(-10px); opacity: 1;}
         }
 
-        /* --- Info Section Layout --- */
         #info-section { 
             z-index: 2; padding-top: 60px; padding-bottom: 80px; 
             background: linear-gradient(to top, #000 0%, transparent 100%);
@@ -289,7 +285,6 @@
             letter-spacing: 0.2em; border-top: 1px solid #111; padding-top: 20px;
         }
 
-        /* --- 手機版 RWD 強制垂直排列 --- */
         @media (max-width: 900px) {
             .obsidian-container { 
                 padding: 1.5rem; 
@@ -340,7 +335,7 @@
                 <div class="input-group">
                     <label>Media Source (影像載體)</label>
                     <div class="file-drop-zone" id="drop-zone">
-                        <input type="file" id="file-input" accept="video/*, .txt">
+                        <input type="file" id="file-input" accept="*/*">
                         <div class="drop-title" id="file-name">點擊或拖曳檔案至此</div>
                     </div>
                 </div>
