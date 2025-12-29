@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <title>暗渡-時域協議：日蝕</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="暗渡">
+    <meta name="theme-color" content="#050505">
+    
+    <link rel="apple-touch-icon" href="logo.png">
+    <link rel="icon" type="image/png" href="logo.png">
+
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&family=Cinzel:wght@500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- 變數設定 --- */
+        :root {
+            --logo-url: url('logo.png'); 
+            --bg-img: url('bg-night-pc.png'); 
+            
+            --ghost-cyan: #00ffbf; 
+            --spider-lily: #ff3b3b;
+            --bone-white: #e0e0e0;
+            --ash-gray: #7a7a7a;
+            
+            --obsidian-bg: rgba(20, 20, 25, 0.75);
+            --obsidian-border: rgba(0, 255, 191, 0.2); 
+            
+            --radius-box: 28px;
+            --radius-input: 12px;
+            --radius-btn: 14px;
+        }
+
+        * {
+            box-sizing: border-box; margin: 0; padding: 0;
+            transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+            -webkit-tap-highlight-color: transparent;
+            font-family: "Cinzel", "Noto Serif TC", serif;
+        }
+
+        html { 
+            scroll-behavior: smooth; height: 100%;
+            overflow-x: hidden;
+        }
+        
+        body {
+            background-color: #000; 
+            color: var(--bone-white);
+            min-height: 100%;
+            background-image: radial-gradient(circle at center, #111 0%, #000 100%);
+            overscroll-behavior-y: none;
+        }
+
+        /* [修改] 背景圖：移除濾鏡，保留原色，僅維持透明度 */
+        .bg-fixed { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; 
+            opacity: 0.3; 
+            /* filter: contrast(1.2) grayscale(0.8) sepia(0.2);  <-- 已移除此行 */
+            background-image: var(--bg-img); background-size: cover; background-position: center;
+        }
+
+        section {
+            width: 100vw; min-height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            padding: 20px; position: relative;
+        }
+
+        /* --- 主容器：手機版優化 --- */
+        #app-section { z-index: 2; padding-top: env(safe-area-inset-top); }
+        
+        .obsidian-container {
+            width: 100%; max-width: 520px;
+            background: var(--obsidian-bg);
+            backdrop-filter: saturate(120%) blur(30px); 
+            -webkit-backdrop-filter: saturate(120%) blur(30px);
+            border-radius: var(--radius-box); 
+            border: 1px solid var(--obsidian-border);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6), inset 0 0 20px rgba(0, 255, 191, 0.05);
+            padding: 2.5rem;
+            display: flex; flex-direction: column;
+            gap: 1.2rem;
+            position: relative;
+            animation: border-pulse 8s infinite ease-in-out;
+        }
+
+        @keyframes border-pulse {
+            0%, 100% { border-color: rgba(0, 255, 191, 0.1); }
+            50% { border-color: rgba(0, 255, 191, 0.3); box-shadow: 0 20px 60px rgba(0,0,0,0.8), inset 0 0 30px rgba(0, 255, 191, 0.1); }
+        }
+
+        header { display: flex; flex-direction: column; align-items: center; margin-bottom: 0.5rem; text-align: center; }
+        
+        /* [修改] Logo：移除濾鏡，保留原色 */
+        .logo {
+            width: 110px; height: 110px; margin-bottom: 20px; 
+            border-radius: 24px;
+            border: 1px solid rgba(0, 255, 191, 0.3);
+            background-image: var(--logo-url); background-size: cover; background-position: center;
+            /* filter: grayscale(100%) contrast(1.2); <-- 已移除此行 */
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+        }
+        
+        h1 { 
+            font-size: 2rem; font-weight: 900; letter-spacing: 0.15em; 
+            color: var(--bone-white); 
+            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+            margin-bottom: 5px;
+        }
+        .subtitle { 
+            font-size: 0.7rem; color: var(--ghost-cyan); 
+            letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.8;
+        }
+
+        .expiry-badge {
+            margin-top: 12px; font-size: 0.75rem;
+            color: var(--spider-lily);
+            background: rgba(255, 59, 59, 0.1);
+            border: 1px solid rgba(255, 59, 59, 0.2);
+            padding: 6px 16px; border-radius: 20px;
+            letter-spacing: 0.05em; display: inline-block; font-weight: 600;
+        }
+
+        .input-group { display: flex; flex-direction: column; gap: 8px; }
+        label { 
+            font-size: 0.8rem; font-weight: 600; color: var(--ash-gray); margin-left: 6px; 
+            letter-spacing: 0.05em; text-transform: uppercase;
+        }
+        
+        input[type="text"] {
+            width: 100%; 
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--ghost-cyan); padding: 16px;
+            font-size: 1rem; font-family: 'Cinzel', 'Noto Serif TC', serif;
+            border-radius: var(--radius-input);
+        }
+        input:focus { 
+            outline: none; background: rgba(0, 255, 191, 0.05);
+            border-color: rgba(0, 255, 191, 0.4);
+        }
+
+        .file-drop-zone {
+            width: 100%; height: 110px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px dashed rgba(122, 122, 122, 0.4);
+            border-radius: var(--radius-input);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            cursor: pointer; position: relative;
+            text-align: center; padding: 10px;
+        }
+        .file-drop-zone input[type="file"] {
+            position: absolute; width: 100%; height: 100%; top: 0; left: 0; opacity: 0; cursor: pointer;
+        }
+        .drop-title { font-size: 0.95rem; font-weight: 600; color: var(--bone-white); pointer-events: none;}
+        
+        .btn-group { display: flex; gap: 12px; margin-top: 0.8rem; }
+        button {
+            flex: 1; padding: 16px; border: none; 
+            border-radius: var(--radius-btn);
+            font-size: 1rem; font-weight: 600; cursor: pointer; letter-spacing: 0.1em; 
+            display: flex; align-items: center; justify-content: center;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .btn-encrypt { 
+            background: linear-gradient(135deg, #0b4f43 0%, #004d40 100%);
+            color: var(--ghost-cyan);
+            border: 1px solid rgba(0, 255, 191, 0.2);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .btn-encrypt:active { transform: scale(0.96); }
+        
+        .btn-decrypt { 
+            background: rgba(255, 255, 255, 0.1); 
+            color: var(--bone-white); 
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .btn-decrypt:active { transform: scale(0.96); }
+
+        .status-container { margin-top: 15px; text-align: center; }
+        .progress-bar {
+            width: 100%; height: 4px; background: rgba(255,255,255,0.1);
+            border-radius: 2px; overflow: hidden; margin-bottom: 10px; display: none;
+        }
+        .progress-fill {
+            width: 0%; height: 100%; background: var(--ghost-cyan);
+            box-shadow: 0 0 10px var(--ghost-cyan);
+            transition: width 0.2s ease;
+        }
+        .status-msg { 
+            font-size: 0.8rem; color: var(--ghost-cyan); 
+            min-height: 20px; font-weight: 500;
+        }
+
+        .result-area {
+            display: none; flex-direction: column; gap: 15px;
+            margin-top: 15px;
+            animation: emerge 0.6s ease-out forwards;
+            border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;
+        }
+        @keyframes emerge { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        video {
+            width: 100%; border-radius: var(--radius-input);
+            background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .download-link {
+            text-decoration: none; padding: 14px; 
+            border-radius: var(--radius-btn);
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: var(--bone-white);
+            text-align: center; font-weight: 600; font-size: 0.9rem; letter-spacing: 0.1em;
+            display: block;
+        }
+
+        /* --- 手機版特別優化 (RWD) --- */
+        @media (max-width: 480px) {
+            .obsidian-container { 
+                padding: 1.5rem; 
+                max-width: 90%;
+            }
+            .logo { width: 90px; height: 90px; margin-bottom: 15px; }
+            h1 { font-size: 1.6rem; }
+            
+            input[type="text"] { font-size: 16px; padding: 14px; }
+            
+            .btn-group { flex-direction: column; gap: 10px; }
+            button { padding: 14px; width: 100%; }
+            
+            #info-section { padding-top: 40px; }
+            .info-title { font-size: 1.8rem; }
+            .features-grid { grid-template-columns: 1fr; gap: 20px; }
+        }
+
+        .scroll-indicator {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            color: var(--ash-gray); 
+            animation: float 3s infinite ease-in-out;
+            font-size: 1.5rem; cursor: pointer; z-index: 10;
+        }
+        @keyframes float {
+            0%, 100% {transform: translateX(-50%) translateY(0); opacity: 0.3;}
+            50% {transform: translateX(-50%) translateY(-10px); opacity: 1;}
+        }
+
+        /* Info Section */
+        #info-section { 
+            z-index: 2; padding-top: 80px; padding-bottom: 60px; 
+            background: linear-gradient(to top, #000 0%, transparent 100%);
+        }
+        .info-container { width: 100%; max-width: 960px; display: flex; flex-direction: column; gap: 50px; padding: 0 20px; }
+        
+        .info-title {
+            font-size: 3rem; font-weight: 900; line-height: 1.2;
+            color: var(--bone-white); text-align: center;
+            text-shadow: 0 0 20px rgba(255,255,255,0.15);
+            letter-spacing: 0.05em;
+        }
+        .info-desc { 
+            font-size: 1.1rem; color: var(--ash-gray); text-align: center;
+            max-width: 600px; margin: 0 auto; line-height: 1.8;
+            font-weight: 500;
+        }
+
+        .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+        .feature-card {
+            background: rgba(20, 20, 25, 0.6); 
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 40px 20px; text-align: center;
+        }
+        .icon-large { font-size: 3rem; margin-bottom: 20px; display: block; filter: grayscale(1); }
+        .card-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 10px; color: var(--bone-white); }
+        .card-text { font-size: 0.9rem; color: var(--ash-gray); line-height: 1.6; }
+        
+        .main-footer { 
+            text-align: center; margin-top: 60px; color: #444; font-size: 0.7rem; 
+            letter-spacing: 0.2em; border-top: 1px solid #111; padding-top: 20px;
+        }
+
+        .observe-target { opacity: 0; transform: translateY(20px); }
+        .emerge-up { opacity: 1 !important; transform: translateY(0) !important; }
+    </style>
+</head>
+<body>
+    <div class="bg-fixed"></div>
+
+    <section id="app-section">
+        <div class="obsidian-container">
+            <header>
+                <div class="logo"></div>
+                <h1>暗渡</h1>
+                <div class="subtitle">Temporal Protocol: Eclipse</div>
+                <div id="key-expiry-display" class="expiry-badge">計算天數...</div>
+            </header>
+            
+            <div class="input-group">
+                <label>Access Token (通行密令)</label>
+                <input type="text" id="password" placeholder="在此銘刻密鑰..." autocomplete="off">
+            </div>
+            
+            <div class="input-group">
+                <label>Media Source (影像載體)</label>
+                <div class="file-drop-zone" id="drop-zone">
+                    <input type="file" id="file-input" accept="video/*, .txt">
+                    <div class="drop-title" id="file-name">點擊或拖曳檔案至此</div>
+                </div>
+            </div>
+            
+            <div class="status-container">
+                <div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+                <div id="status-log" class="status-msg">靜默待命</div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn-encrypt" onclick="processVideo('encrypt')">封裝 (加密)</button>
+                <button class="btn-decrypt" onclick="processVideo('decrypt')">顯影 (解密)</button>
+            </div>
+            
+            <div class="result-area" id="result-area">
+                <div id="video-wrapper" style="display:none;">
+                    <label>Revenant Playback</label>
+                    <video id="player" controls playsinline></video>
+                </div>
+                <div id="download-wrapper" style="display:none;">
+                    <a id="download-btn" class="download-link" href="#" download>下載密文訃聞 (.txt)</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="scroll-indicator" onclick="document.getElementById('info-section').scrollIntoView({behavior: 'smooth'})">▼</div>
+    </section>
+
+    <section id="info-section">
+        <div class="info-container">
+            <div class="info-header">
+                <div class="info-title observe-target">過時不候，閱後即焚。</div>
+                <div class="info-desc observe-target">
+                    時間是最終的審判者。<br>
+                    晨鐘敲響之時（08:00 AM），昨日的影像將化為灰燼。
+                </div>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card observe-target">
+                    <span class="icon-large">🌑</span>
+                    <div class="card-title">暗渡陳倉</div>
+                    <div class="card-text">影片轉化為無意義的亂碼密文。無伺服器，無雲端，僅存於您的本地與指尖。</div>
+                </div>
+                <div class="feature-card observe-target">
+                    <span class="icon-large">🛡️</span>
+                    <div class="card-title">霓喃自研加密算法</div>
+                    <div class="card-text">採用美國聯邦政府標準的AES-256加密算法，配合 GCM 完整性驗證。即使截獲密文，若無正確的時間與金鑰，亦無法窺探分毫。</div>
+                </div>
+                <div class="feature-card observe-target">
+                    <span class="icon-large">⏳</span>
+                    <div class="card-title">日蝕界線</div>
+                    <div class="card-text">金鑰與 NST國家標準時間(UTC+8) 綁定。錯過今日，密文將永久消散於虛空之中。</div>
+                </div>
+            </div>
+
+            <footer class="main-footer observe-target">
+                <div id="copyright-text"></div>
+                DESIGNED BY An Du - Temporal Protocol: Eclipse
+            </footer>
+        </div>
+    </section>
+
+<script>
+    // --- UI 邏輯 ---
+    const fileInput = document.getElementById('file-input');
+    const fileNameDisplay = document.getElementById('file-name');
+    
+    fileInput.addEventListener('change', (e) => {
+        if(e.target.files.length > 0) {
+            fileNameDisplay.textContent = e.target.files[0].name;
+            fileNameDisplay.style.color = "var(--ghost-cyan)";
+        }
+    });
+
+    const observer = new IntersectionObserver((entries, obs) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('emerge-up');
+                obs.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.15 });
+    document.querySelectorAll('.observe-target').forEach(el => observer.observe(el));
+
+    // 時間邏輯
+    function updateTimeAndTheme() {
+        const now = new Date();
+        const year = now.getFullYear();
+        document.getElementById('copyright-text').innerHTML = `&copy;${year} 暗渡-時域協議：日蝕`;
+        document.getElementById('key-expiry-display').textContent = `失效界線：明日 08:00 AM`;
+    }
+    updateTimeAndTheme(); setInterval(updateTimeAndTheme, 60000);
+
+    // --- 加密核心邏輯 (含網路超時保護) ---
+    const statusLog = document.getElementById('status-log');
+    const progressBar = document.getElementById('progress-bar');
+    const progressFill = document.getElementById('progress-fill');
+    
+    function setStatus(msg, color, percent) {
+        statusLog.textContent = msg;
+        statusLog.style.color = color || "var(--ghost-cyan)";
+        statusLog.style.textShadow = `0 0 5px ${color || "var(--ghost-cyan)"}`;
+        if(percent !== undefined) {
+            progressBar.style.display = 'block';
+            progressFill.style.width = percent + '%';
+        } else {
+            progressBar.style.display = 'none';
+        }
+    }
+
+    // 改良版時間獲取：3秒超時機制
+    async function getTrustedTimestamp() {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000); 
+
+            const response = await fetch('https://worldtimeapi.org/api/timezone/Etc/UTC', { 
+                cache: 'no-store',
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (!response.ok) throw new Error('Time API Error');
+            const data = await response.json();
+            return data.unixtime; 
+        } catch (e) {
+            console.warn("網路校時逾時，切換至本地時間。", e);
+            const oldColor = statusLog.style.color;
+            statusLog.style.color = "var(--spider-lily)";
+            setTimeout(() => { statusLog.style.color = oldColor; }, 2000);
+            return Math.floor(Date.now() / 1000);
+        }
+    }
+
+    async function deriveKey(password, salt) {
+        const encoder = new TextEncoder();
+        const nowSeconds = await getTrustedTimestamp();
+        const dayId = Math.floor(nowSeconds / 86400); 
+        
+        const keyMaterialStr = password + "_" + dayId.toString();
+        const keyMaterial = await crypto.subtle.importKey(
+            "raw", encoder.encode(keyMaterialStr), { name: "PBKDF2" }, false, ["deriveKey"]
+        );
+
+        return await crypto.subtle.deriveKey(
+            { name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256" },
+            keyMaterial,
+            { name: "AES-GCM", length: 256 },
+            false,
+            ["encrypt", "decrypt"]
+        );
+    }
+
+    async function processVideo(mode) {
+        const password = document.getElementById('password').value;
+        const files = document.getElementById('file-input').files;
+        
+        if (!password) { setStatus("錯誤：需注入通行密令", "var(--spider-lily)"); return; }
+        if (files.length === 0) { setStatus("錯誤：未檢測到載體", "var(--spider-lily)"); return; }
+        
+        const file = files[0];
+        document.getElementById('result-area').style.display = 'none';
+        setStatus("儀式啟動...", "var(--ash-gray)", 5);
+
+        try {
+            if (mode === 'encrypt') {
+                await encryptVideo(file, password);
+            } else {
+                await decryptVideo(file, password);
+            }
+        } catch (e) {
+            console.error(e);
+            setStatus("儀式失敗: " + e.message, "var(--spider-lily)");
+        }
+    }
+
+    async function encryptVideo(file, password) {
+        setStatus("解析影像靈魂...", "var(--ghost-cyan)", 20);
+        const arrayBuffer = await file.arrayBuffer();
+        
+        setStatus("校對絕對時間軸...", "var(--ghost-cyan)", 40);
+        const salt = crypto.getRandomValues(new Uint8Array(16));
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const key = await deriveKey(password, salt);
+        
+        setStatus("注入 GCM 封印...", "#00897b", 60);
+        const encryptedContent = await crypto.subtle.encrypt(
+            { name: "AES-GCM", iv: iv }, key, arrayBuffer
+        );
+
+        const combined = new Uint8Array(salt.byteLength + iv.byteLength + encryptedContent.byteLength);
+        combined.set(salt, 0); combined.set(iv, 16);
+        combined.set(new Uint8Array(encryptedContent), 28);
+
+        setStatus("轉化為純文字符咒...", "var(--bone-white)", 80);
+        
+        const combinedBlob = new Blob([combined]);
+        const reader = new FileReader();
+        reader.readAsDataURL(combinedBlob);
+        
+        reader.onloadend = function() {
+            const base64data = reader.result.split(',')[1];
+            const textBlob = new Blob([base64data], {type: 'text/plain'});
+            const downloadUrl = URL.createObjectURL(textBlob);
+            const downloadBtn = document.getElementById('download-btn');
+            
+            downloadBtn.href = downloadUrl;
+            downloadBtn.download = `ANDU_ECLIPSE_${Date.now()}.txt`;
+            
+            document.getElementById('result-area').style.display = 'flex';
+            document.getElementById('download-wrapper').style.display = 'block';
+            document.getElementById('video-wrapper').style.display = 'none';
+            setStatus("封裝完成。請下載密文訃聞。", "var(--ghost-cyan)", 100);
+        };
+    }
+
+    async function decryptVideo(file, password) {
+        setStatus("讀取密文...", "var(--ghost-cyan)", 20);
+        const text = await file.text();
+        const base64clean = text.trim();
+        setStatus("重塑肉身...", "var(--ghost-cyan)", 40);
+        
+        const res = await fetch(`data:application/octet-stream;base64,${base64clean}`);
+        const combinedBuffer = await res.arrayBuffer();
+        const combinedArray = new Uint8Array(combinedBuffer);
+
+        if (combinedArray.length < 28) throw new Error("檔案已損毀，無法招魂");
+
+        const salt = combinedArray.slice(0, 16);
+        const iv = combinedArray.slice(16, 28);
+        const ciphertext = combinedArray.slice(28);
+
+        setStatus("驗證時間法則與解密...", "#00897b", 60);
+        const key = await deriveKey(password, salt);
+
+        try {
+            const decryptedContent = await crypto.subtle.decrypt(
+                { name: "AES-GCM", iv: iv }, key, ciphertext
+            );
+
+            setStatus("顯影中...", "var(--bone-white)", 90);
+            const videoBlob = new Blob([decryptedContent], { type: "video/mp4" });
+            const videoUrl = URL.createObjectURL(videoBlob);
+            const player = document.getElementById('player');
+            player.src = videoUrl;
+            
+            document.getElementById('result-area').style.display = 'flex';
+            document.getElementById('download-wrapper').style.display = 'none';
+            document.getElementById('video-wrapper').style.display = 'block';
+            setStatus("解密成功。影像已重現。", "var(--ghost-cyan)", 100);
+
+        } catch (e) {
+            setStatus("解密失敗：時辰已過，或密令錯誤。", "var(--spider-lily)");
+        }
+    }
+</script>
+</body>
+</html>
