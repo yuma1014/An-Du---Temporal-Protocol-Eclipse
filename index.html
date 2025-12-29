@@ -6,10 +6,13 @@
     
     <title>暗渡-時域協議：日蝕</title>
     
+    <link rel="manifest" href="manifest.json">
+    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="暗渡">
-    <meta name="theme-color" content="#050505">
+    
+    <meta name="theme-color" content="#111111">
     
     <link rel="apple-touch-icon" href="logo.png">
     <link rel="icon" type="image/png" href="logo.png">
@@ -42,35 +45,51 @@
             font-family: "Cinzel", "Noto Serif TC", serif;
         }
 
-        html { 
-            scroll-behavior: smooth; height: 100%;
+        html, body {
+            width: 100%; height: 100%;
             overflow-x: hidden;
+            /* 鎖定背景色與 Manifest 一致 */
+            background-color: #111111; 
         }
         
         body {
-            background-color: #000; 
             color: var(--bone-white);
-            min-height: 100%;
-            background-image: radial-gradient(circle at center, #111 0%, #000 100%);
+            background-image: radial-gradient(circle at center, #1a1a1a 0%, #111111 100%);
+            /* 防止 iOS 橡皮筋滾動效果，讓體驗更像 App */
             overscroll-behavior-y: none;
+            display: flex; flex-direction: column;
         }
 
-        /* [修改] 背景圖：移除濾鏡，保留原色，僅維持透明度 */
+        /* 背景圖：保留原色 */
         .bg-fixed { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; 
             opacity: 0.3; 
-            /* filter: contrast(1.2) grayscale(0.8) sepia(0.2);  <-- 已移除此行 */
             background-image: var(--bg-img); background-size: cover; background-position: center;
         }
 
+        /* --- 佈局容器：處理安全區域 --- */
+        .app-layout {
+            flex: 1;
+            width: 100vw;
+            overflow-y: auto; /* 內容在此滾動 */
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+            padding-bottom: 40px;
+        }
+
         section {
-            width: 100vw; min-height: 100vh;
+            width: 100%; min-height: 100vh;
             display: flex; justify-content: center; align-items: center;
             padding: 20px; position: relative;
         }
 
         /* --- 主容器：手機版優化 --- */
-        #app-section { z-index: 2; padding-top: env(safe-area-inset-top); }
+        #app-section { 
+            z-index: 2; 
+            /* [關鍵] 避開瀏海與頂部狀態列 */
+            padding-top: max(20px, env(safe-area-inset-top)); 
+            padding-bottom: max(20px, env(safe-area-inset-bottom));
+        }
         
         .obsidian-container {
             width: 100%; max-width: 520px;
@@ -85,6 +104,7 @@
             gap: 1.2rem;
             position: relative;
             animation: border-pulse 8s infinite ease-in-out;
+            margin: auto 0; /* 垂直置中 */
         }
 
         @keyframes border-pulse {
@@ -94,13 +114,12 @@
 
         header { display: flex; flex-direction: column; align-items: center; margin-bottom: 0.5rem; text-align: center; }
         
-        /* [修改] Logo：移除濾鏡，保留原色 */
+        /* Logo：保留原色 */
         .logo {
             width: 110px; height: 110px; margin-bottom: 20px; 
             border-radius: 24px;
             border: 1px solid rgba(0, 255, 191, 0.3);
             background-image: var(--logo-url); background-size: cover; background-position: center;
-            /* filter: grayscale(100%) contrast(1.2); <-- 已移除此行 */
             box-shadow: 0 8px 20px rgba(0,0,0,0.5);
         }
         
@@ -219,11 +238,12 @@
             display: block;
         }
 
-        /* --- 手機版特別優化 (RWD) --- */
+        /* --- 手機版 RWD 精確修正 --- */
         @media (max-width: 480px) {
             .obsidian-container { 
                 padding: 1.5rem; 
-                max-width: 90%;
+                width: 90%; /* 不要是滿版，留點呼吸感 */
+                margin: 0 auto;
             }
             .logo { width: 90px; height: 90px; margin-bottom: 15px; }
             h1 { font-size: 1.6rem; }
@@ -233,7 +253,6 @@
             .btn-group { flex-direction: column; gap: 10px; }
             button { padding: 14px; width: 100%; }
             
-            #info-section { padding-top: 40px; }
             .info-title { font-size: 1.8rem; }
             .features-grid { grid-template-columns: 1fr; gap: 20px; }
         }
@@ -251,7 +270,7 @@
 
         /* Info Section */
         #info-section { 
-            z-index: 2; padding-top: 80px; padding-bottom: 60px; 
+            z-index: 2; padding-top: 60px; padding-bottom: 80px; 
             background: linear-gradient(to top, #000 0%, transparent 100%);
         }
         .info-container { width: 100%; max-width: 960px; display: flex; flex-direction: column; gap: 50px; padding: 0 20px; }
@@ -292,89 +311,93 @@
 <body>
     <div class="bg-fixed"></div>
 
-    <section id="app-section">
-        <div class="obsidian-container">
-            <header>
-                <div class="logo"></div>
-                <h1>暗渡</h1>
-                <div class="subtitle">Temporal Protocol: Eclipse</div>
-                <div id="key-expiry-display" class="expiry-badge">計算天數...</div>
-            </header>
-            
-            <div class="input-group">
-                <label>Access Token (通行密令)</label>
-                <input type="text" id="password" placeholder="在此銘刻密鑰..." autocomplete="off">
-            </div>
-            
-            <div class="input-group">
-                <label>Media Source (影像載體)</label>
-                <div class="file-drop-zone" id="drop-zone">
-                    <input type="file" id="file-input" accept="video/*, .txt">
-                    <div class="drop-title" id="file-name">點擊或拖曳檔案至此</div>
+    <div class="app-layout">
+        <section id="app-section">
+            <div class="obsidian-container">
+                <header>
+                    <div class="logo"></div>
+                    <h1>暗渡</h1>
+                    <div class="subtitle">Temporal Protocol: Eclipse</div>
+                    <div id="key-expiry-display" class="expiry-badge">計算天數...</div>
+                </header>
+                
+                <div class="input-group">
+                    <label>Access Token (通行密令)</label>
+                    <input type="text" id="password" placeholder="在此銘刻密鑰..." autocomplete="off">
                 </div>
-            </div>
-            
-            <div class="status-container">
-                <div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
-                <div id="status-log" class="status-msg">靜默待命</div>
-            </div>
+                
+                <div class="input-group">
+                    <label>Media Source (影像載體)</label>
+                    <div class="file-drop-zone" id="drop-zone">
+                        <input type="file" id="file-input" accept="video/*, .txt">
+                        <div class="drop-title" id="file-name">點擊或拖曳檔案至此</div>
+                    </div>
+                </div>
+                
+                <div class="status-container">
+                    <div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+                    <div id="status-log" class="status-msg">靜默待命</div>
+                </div>
 
-            <div class="btn-group">
-                <button class="btn-encrypt" onclick="processVideo('encrypt')">封裝 (加密)</button>
-                <button class="btn-decrypt" onclick="processVideo('decrypt')">顯影 (解密)</button>
-            </div>
-            
-            <div class="result-area" id="result-area">
-                <div id="video-wrapper" style="display:none;">
-                    <label>Revenant Playback</label>
-                    <video id="player" controls playsinline></video>
+                <div class="btn-group">
+                    <button class="btn-encrypt" onclick="processVideo('encrypt')">封裝 (加密)</button>
+                    <button class="btn-decrypt" onclick="processVideo('decrypt')">顯影 (解密)</button>
                 </div>
-                <div id="download-wrapper" style="display:none;">
-                    <a id="download-btn" class="download-link" href="#" download>下載密文訃聞 (.txt)</a>
-                </div>
-            </div>
-        </div>
-        
-        <div class="scroll-indicator" onclick="document.getElementById('info-section').scrollIntoView({behavior: 'smooth'})">▼</div>
-    </section>
-
-    <section id="info-section">
-        <div class="info-container">
-            <div class="info-header">
-                <div class="info-title observe-target">過時不候，閱後即焚。</div>
-                <div class="info-desc observe-target">
-                    時間是最終的審判者。<br>
-                    晨鐘敲響之時（08:00 AM），昨日的影像將化為灰燼。
+                
+                <div class="result-area" id="result-area">
+                    <div id="video-wrapper" style="display:none;">
+                        <label>Revenant Playback</label>
+                        <video id="player" controls playsinline></video>
+                    </div>
+                    <div id="download-wrapper" style="display:none;">
+                        <a id="download-btn" class="download-link" href="#" download>下載密文訃聞 (.txt)</a>
+                    </div>
                 </div>
             </div>
             
-            <div class="features-grid">
-                <div class="feature-card observe-target">
-                    <span class="icon-large">🌑</span>
-                    <div class="card-title">暗渡陳倉</div>
-                    <div class="card-text">影片轉化為無意義的亂碼密文。無伺服器，無雲端，僅存於您的本地與指尖。</div>
-                </div>
-                <div class="feature-card observe-target">
-                    <span class="icon-large">🛡️</span>
-                    <div class="card-title">霓喃自研加密算法</div>
-                    <div class="card-text">採用美國聯邦政府標準的AES-256加密算法，配合 GCM 完整性驗證。即使截獲密文，若無正確的時間與金鑰，亦無法窺探分毫。</div>
-                </div>
-                <div class="feature-card observe-target">
-                    <span class="icon-large">⏳</span>
-                    <div class="card-title">日蝕界線</div>
-                    <div class="card-text">金鑰與 NST國家標準時間(UTC+8) 綁定。錯過今日，密文將永久消散於虛空之中。</div>
-                </div>
-            </div>
+            <div class="scroll-indicator" onclick="document.getElementById('info-section').scrollIntoView({behavior: 'smooth'})">▼</div>
+        </section>
 
-            <footer class="main-footer observe-target">
-                <div id="copyright-text"></div>
-                DESIGNED BY An Du - Temporal Protocol: Eclipse
-            </footer>
-        </div>
-    </section>
+        <section id="info-section">
+            <div class="info-container">
+                <div class="info-header">
+                    <div class="info-title observe-target">過時不候，閱後即焚。</div>
+                    <div class="info-desc observe-target">
+                        時間是最終的審判者。<br>
+                        晨鐘敲響之時（08:00 AM），昨日的影像將化為灰燼。
+                    </div>
+                </div>
+                
+                <div class="features-grid">
+                    <div class="feature-card observe-target">
+                        <span class="icon-large">🌑</span>
+                        <div class="card-title">暗渡陳倉</div>
+                        <div class="card-text">影片轉化為無意義的亂碼密文。無伺服器，無雲端，僅存於您的本地與指尖。</div>
+                    </div>
+                    <div class="feature-card observe-target">
+                        <span class="icon-large">🔒</span>
+                        <div class="card-title">AES-256 GCM</div>
+                        <div class="card-text">軍規級加密標準。即使截獲密文，若無正確的時間與金鑰，亦無法窺探分毫。</div>
+                    </div>
+                    <div class="feature-card observe-target">
+                        <span class="icon-large">⏳</span>
+                        <div class="card-title">日蝕界線</div>
+                        <div class="card-text">每日早晨 08:00 (UTC+8) 重置規則。錯過今日，密文將永久封存於虛空之中。</div>
+                    </div>
+                </div>
+
+                <footer class="main-footer observe-target">
+                    <div id="copyright-text"></div>
+                    DESIGNED BY Ni Nan - 暗渡 Temporal Protocol
+                </footer>
+            </div>
+        </section>
+    </div>
 
 <script>
-    // --- UI 邏輯 ---
+    // --- JS 邏輯 (完全保留) ---
+    
+    // UI 邏輯
     const fileInput = document.getElementById('file-input');
     const fileNameDisplay = document.getElementById('file-name');
     
@@ -404,7 +427,7 @@
     }
     updateTimeAndTheme(); setInterval(updateTimeAndTheme, 60000);
 
-    // --- 加密核心邏輯 (含網路超時保護) ---
+    // 加密核心邏輯 (含網路超時保護)
     const statusLog = document.getElementById('status-log');
     const progressBar = document.getElementById('progress-bar');
     const progressFill = document.getElementById('progress-fill');
@@ -421,7 +444,7 @@
         }
     }
 
-    // 改良版時間獲取：3秒超時機制
+    // 3秒超時機制
     async function getTrustedTimestamp() {
         try {
             const controller = new AbortController();
