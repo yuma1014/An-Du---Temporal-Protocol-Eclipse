@@ -54,25 +54,23 @@
         
         body {
             color: var(--bone-white);
-            /* [修正] 移除原本 body 的背景圖片與漸層，避免蓋住 z-index:-1 的圖片層 */
             background: transparent; 
             overscroll-behavior-y: none;
             display: flex; flex-direction: column;
         }
 
-        /* [修正] 背景層：將圖片與漸層疊加在這裡 */
+        /* 背景層 */
         .bg-fixed { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; 
-            opacity: 0.4; /*稍微調高一點透明度讓圖片明顯些*/
+            opacity: 0.4; 
             
-            /* 這裡使用了多重背景：上層是半透明漸層，下層是您的背景圖 */
             background-image: 
                 radial-gradient(circle at center, rgba(26,26,26,0.5) 0%, #111111 100%), 
                 var(--bg-img);
             
             background-size: cover; 
             background-position: center;
-            background-blend-mode: overlay; /* 讓漸層與圖片混合，產生幽冥感 */
+            background-blend-mode: overlay; 
         }
 
         .app-layout {
@@ -228,10 +226,12 @@
         }
         @keyframes emerge { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        video {
+        /* 影片與圖片共用樣式 */
+        video, img#img-player {
             width: 100%; border-radius: var(--radius-input);
             background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
+        
         .download-link {
             text-decoration: none; padding: 14px; 
             border-radius: var(--radius-btn);
@@ -340,7 +340,7 @@
                 <div class="input-group">
                     <label>Media Source (影像載體)</label>
                     <div class="file-drop-zone" id="drop-zone">
-                        <input type="file" id="file-input" accept="video/*, .txt">
+                        <input type="file" id="file-input" accept="video/*, image/*, .txt">
                         <div class="drop-title" id="file-name">點擊或拖曳檔案至此</div>
                     </div>
                 </div>
@@ -358,10 +358,11 @@
                 <div class="result-area" id="result-area">
                     <div id="video-wrapper" style="display:none;">
                         <label>Revenant Playback</label>
+                        <img id="img-player" style="display:none;" alt="Decrypted Image">
                         <video id="player" controls playsinline></video>
                     </div>
                     <div id="download-wrapper" style="display:none;">
-                        <a id="download-btn" class="download-link" href="#" download>下載密文訃聞 (.txt)</a>
+                        <a id="download-btn" class="download-link" href="#" download>下載密文 (.txt)</a>
                     </div>
                 </div>
             </div>
@@ -383,7 +384,7 @@
                     <div class="feature-card observe-target">
                         <span class="icon-large">🌑</span>
                         <div class="card-title">暗渡陳倉</div>
-                        <div class="card-text">影片轉化為無意義的亂碼密文。無伺服器，無雲端，僅存於您的本地與指尖。</div>
+                        <div class="card-text">將圖片、影片轉化為無意義的亂碼密文。無伺服器，無雲端，僅存於您的本地與指尖。</div>
                     </div>
                     <div class="feature-card observe-target">
                         <span class="icon-large">🛡️</span>
@@ -406,7 +407,7 @@
     </div>
 
 <script>
-    // --- JS 邏輯 (完全保留) ---
+    // --- JS 邏輯 ---
     
     // UI 邏輯
     const fileInput = document.getElementById('file-input');
@@ -521,6 +522,24 @@
         }
     }
 
+    // [新增] 輔助函數：檢測檔案類型 (Magic Number)
+    function detectMimeType(buffer) {
+        const arr = new Uint8Array(buffer).subarray(0, 4);
+        let header = "";
+        for(let i = 0; i < arr.length; i++) {
+            header += arr[i].toString(16).toUpperCase();
+        }
+        
+        // 簡單判斷常見圖片檔頭
+        if (header.startsWith("89504E47")) return "image/png";
+        if (header.startsWith("FFD8FF")) return "image/jpeg";
+        if (header.startsWith("47494638")) return "image/gif";
+        if (header.startsWith("424D")) return "image/bmp";
+        
+        // 預設為影片
+        return "video/mp4";
+    }
+
     async function encryptVideo(file, password) {
         setStatus("解析影像靈魂...", "var(--ghost-cyan)", 20);
         const arrayBuffer = await file.arrayBuffer();
@@ -557,7 +576,7 @@
             document.getElementById('result-area').style.display = 'flex';
             document.getElementById('download-wrapper').style.display = 'block';
             document.getElementById('video-wrapper').style.display = 'none';
-            setStatus("封裝完成。請下載密文訃聞。", "var(--ghost-cyan)", 100);
+            setStatus("封裝完成。請下載密文。", "var(--ghost-cyan)", 100);
         };
     }
 
@@ -585,15 +604,33 @@
                 { name: "AES-GCM", iv: iv }, key, ciphertext
             );
 
+            // [新增] 判斷是圖片還是影片
+            const mimeType = detectMimeType(decryptedContent);
+            const isImage = mimeType.startsWith("image/");
+
             setStatus("顯影中...", "var(--bone-white)", 90);
-            const videoBlob = new Blob([decryptedContent], { type: "video/mp4" });
-            const videoUrl = URL.createObjectURL(videoBlob);
+            
+            const mediaBlob = new Blob([decryptedContent], { type: mimeType });
+            const mediaUrl = URL.createObjectURL(mediaBlob);
+            
             const player = document.getElementById('player');
-            player.src = videoUrl;
+            const imgPlayer = document.getElementById('img-player');
             
             document.getElementById('result-area').style.display = 'flex';
             document.getElementById('download-wrapper').style.display = 'none';
             document.getElementById('video-wrapper').style.display = 'block';
+
+            if (isImage) {
+                player.style.display = 'none';
+                player.pause();
+                imgPlayer.src = mediaUrl;
+                imgPlayer.style.display = 'block';
+            } else {
+                imgPlayer.style.display = 'none';
+                player.style.display = 'block';
+                player.src = mediaUrl;
+            }
+            
             setStatus("解密成功。影像已重現。", "var(--ghost-cyan)", 100);
 
         } catch (e) {
